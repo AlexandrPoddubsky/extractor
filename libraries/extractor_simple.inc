@@ -20,8 +20,7 @@ function extractor_simple_extract($text) {
     $word = $words[$pos];
 
     // 1) get all terms that start with this word.
-    $result = db_query('SELECT tid, name FROM {term_data} WHERE vid = %d AND name RLIKE "^%s[[:>:]]"', $vid, $word); // If this query gets too slow, we need to build a word index.
-    while ($term = db_fetch_object($result)) {
+    foreach (_extractor_simple_lookup($word) as $term) {
       $term_tids[$term->name] = $term->tid;
       $term_names[$term->name] = $term->name;
     }
@@ -74,16 +73,45 @@ function extractor_simple_extract($text) {
  * Split text into words.
  */
 function _extractor_simple_split($text) {
-  if (module_exists('search')) {
-    $result = search_index_split(search_simplify($text));
-  }
-  else {
-    $result = preg_split("/[\s,.:\-\(\)\[\]{}*\/]+/", $text);
-  }
-  // search_index_split can return NULL
-  if ($result) {
-    return array_filter($result);
-  }
+  return preg_split("/[\s,.:\-\(\)\[\]{}*\/]+/", $text);
 }
 
+/**
+ * Look up terms for a given word. Supports up to 2000 terms.
+ */
+function _extractor_simple_lookup($word) {
+  static $term_cache = array();
+  static $loaded;
 
+  if (in_array($word, _extractor_simple_stopwords())) {
+    return array();
+  }
+
+  if (!$loaded) {
+    $result = db_query_range('SELECT tid, name FROM {term_data} WHERE vid = %d', variable_get('extractor_simple_vid', 1), 0, 2000);
+    while ($term = db_fetch_object($result)) {
+      $term_cache[strtolower($term->name[0])][$term->name] = $term;
+    }
+    $loaded = TRUE;
+  }
+
+  $terms = array();
+  if (!empty($term_cache)) {
+    if (isset($term_cache[strtolower($word[0])])) {
+      foreach ($term_cache[strtolower($word[0])] as $name => $term) {
+        if (stripos($name, $word) === 0) {
+          $terms[$term->id] = $term;
+        }
+      }
+    }
+  }
+
+  return $terms;
+}
+
+/**
+ * Stop words.
+ */
+function _extractor_simple_stopwords() {
+  return array('a', 'able', 'about', 'across', 'after', 'all', 'almost', 'also', 'am', 'among', 'an', 'and', 'any', 'are', 'as', 'at', 'be', 'because', 'been', 'but', 'by', 'can', 'cannot', 'could', 'dear', 'did', 'do', 'does', 'either', 'else', 'ever', 'every', 'for', 'from', 'get', 'got', 'had', 'has', 'have', 'he', 'her', 'hers', 'him', 'his', 'how', 'however', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'just', 'least', 'let', 'like', 'likely', 'may', 'me', 'might', 'most', 'must', 'my', 'neither', 'no', 'nor', 'not', 'of', 'off', 'often', 'on', 'only', 'or', 'other', 'our', 'own', 'rather', 'said', 'say', 'says', 'she', 'should', 'since', 'so', 'some', 'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'tis', 'to', 'too', 'twas', 'us', 'wants', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'while', 'who', 'whom', 'why', 'will', 'with', 'would', 'yet', 'you', 'your');
+}
