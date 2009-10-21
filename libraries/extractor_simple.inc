@@ -83,7 +83,8 @@ function _extractor_simple_lookup($word) {
   static $term_cache = array();
   static $loaded;
 
-  if (in_array($word, _extractor_simple_stopwords())) {
+  // Do not bother if word starts with a numeric or if word is in stop word list.
+  if (is_numeric($word[0]) || in_array(strtolower($word), _extractor_simple_stopwords())) {
     return array();
   }
 
