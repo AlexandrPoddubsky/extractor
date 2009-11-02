@@ -11,8 +11,14 @@ class ExtractorSimplePieParser extends FeedsSimplePieParser {
    */
   public function getMappingSources() {
     $sources = array(
-      'extracted_terms' => t('Extracted term names'),
-      'extracted_tids' => t('Extracted term tids'),
+      'extracted_terms' => array(
+        'name' => t('Extracted term names'),
+        'description' => t('Array of term names extracted from title and or description.'),
+      ),
+      'extracted_tids' => array(
+        'name' => t('Extracted term tids'),
+        'description' => t('Array of term ids (tid) of term names extracted from title and or description.'),
+      ),
     );
     return parent::getMappingSources() + $sources;
   }
