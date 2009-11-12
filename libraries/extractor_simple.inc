@@ -84,7 +84,7 @@ function _extractor_simple_lookup($word) {
   static $loaded;
 
   // Do not bother if word starts with a numeric or if word is in stop word list.
-  if (is_numeric($word[0]) || in_array(strtolower($word), _extractor_simple_stopwords())) {
+  if ((strlen($word) < 3) || is_numeric($word[0]) || in_array(strtolower($word), _extractor_simple_stopwords())) {
     return array();
   }
 
@@ -101,7 +101,7 @@ function _extractor_simple_lookup($word) {
     if (isset($term_cache[strtolower($word[0])])) {
       foreach ($term_cache[strtolower($word[0])] as $name => $term) {
         if (stripos($name, $word) === 0) {
-          $terms[$term->id] = $term;
+          $terms[$term->tid] = $term;
         }
       }
     }
